@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ana Sayfa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 18px;
+            color: white;
+            background-color: #007bff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            width: 300px;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        p.error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Güvenli Belge Anonimleştirme Sistemi</h1>
+    <p>Akademik makalelerinizi yükleyin ve süreci takip edin.</p>
+
+    <!-- Kullanıcı Giriş Formu -->
+    <form method="POST" action="{% url 'anasayfa' %}">
+        {% csrf_token %}
+        <input type="text" name="email" placeholder="E-posta adresinizi girin" required>
+        <button type="submit" class="btn">Giriş Yap</button>
+    </form>
+
+    {% if hata %}
+        <p class="error">{{ hata }}</p>
+    {% endif %}
+
+    <!-- Diğer İşlem Düğmeleri -->
+    <a href="{% url 'makale_yukle' %}" class="btn">Makale Yükle</a>
+    <a href="{% url 'makale_takip' %}" class="btn">Makale Takip</a>
+</body>
+</html>

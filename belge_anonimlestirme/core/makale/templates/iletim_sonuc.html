@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Değerlendirme İletildi</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome (İkonlar) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        .card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="mb-0 text-center"><i class="fas fa-check-circle"></i> Değerlendirme Başarıyla İletildi</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-paper-plane text-success" style="font-size: 64px;"></i>
+                        </div>
+                        
+                        <h4 class="card-title text-center">{{ makale.baslik }}</h4>
+                        
+                        <div class="alert alert-info">
+                            <p><i class="fas fa-info-circle"></i> Değerlendirme başarıyla yazara iletildi.</p>
+                            <p><strong>Yazar E-posta:</strong> {{ makale.yazar.email }}</p>
+                            <p><strong>İletim Tarihi:</strong> {{ iletim_tarihi }}</p>
+                        </div>
+                        
+                        {% if ek_mesaj %}
+                        <div class="mt-4">
+                            <h5>Yazara İletilen Ek Mesaj:</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    {{ ek_mesaj|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-center mt-4">
+                            {% if dosya_url %}
+                            <a href="{{ dosya_url }}" class="btn btn-outline-primary me-2" target="_blank">
+                                <i class="fas fa-download"></i> Değerlendirme Dosyasını İndir
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'editor_panel' %}" class="btn btn-success">
+                                <i class="fas fa-home"></i> Editör Paneline Dön
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

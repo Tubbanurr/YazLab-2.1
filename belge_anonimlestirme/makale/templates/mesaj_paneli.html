@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mesaj Paneli</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .container {
+            width: 50%;
+            background: white;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .mesaj-form {
+            margin-bottom: 20px;
+        }
+        .mesaj-input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .mesaj-liste .mesaj {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .mesaj small {
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mesaj-form">
+            <h2>Mesaj Gönder</h2>
+            <form id="mesajForm" method="POST">
+                {% csrf_token %}
+                <textarea name="mesaj" class="mesaj-input" required placeholder="Mesajınızı yazın..."></textarea>
+                <input type="hidden" name="makale_id" value="{{ makale.id }}">
+                
+                {% if request.session.kullanici_tipi == "yazar" %}
+                    <input type="hidden" name="alici_id" value="{{ editor.id }}">
+                {% else %}
+                    <select name="alici_id" required>
+                        <option value="">Alıcı seçin...</option>
+                        {% for yazar in yazarlar %}
+                            <option value="{{ yazar.id }}">{{ yazar.email }}</option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+                <button type="submit">Gönder</button>
+            </form>
+            <div id="hataMsg" class="hata"></div>
+        </div>
+
+        <div class="mesaj-liste">
+            <h2>Mesajlar</h2>
+            {% for mesaj in mesajlar %}
+                <div class="mesaj">
+                    <p><strong>{{ mesaj.gonderen.email }}</strong> → <strong>{{ mesaj.alici.email }}</strong></p>
+                    <p>{{ mesaj.mesaj }}</p>
+                    <small>{{ mesaj.tarih|date:"d/m/Y H:i" }}</small>
+                </div>
+            {% empty %}
+                <p>Henüz mesaj bulunmamaktadır.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+    document.getElementById('mesajForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch(`/mesaj-gonder/${formData.get('makale_id')}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                document.getElementById('hataMsg').textContent = data.message;
+            }
+        })
+        .catch(error => {
+            console.error('Hata:', error);
+            document.getElementById('hataMsg').textContent = 'Mesaj gönderirken bir hata oluştu.';
+        });
+    });
+    </script>
+</body>
+</html>

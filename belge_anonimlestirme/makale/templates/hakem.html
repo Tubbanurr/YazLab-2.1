@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hakem Değerlendirme Paneli</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome (İkonlar) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        .card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="text-center text-primary mb-4"><i class="fas fa-user-tie"></i> Hoş geldiniz, Hakem!</h1>
+        
+        {% if messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+        
+        {% if makaleler %}
+            <h2 class="text-center text-secondary">Size Atanan Makaleler</h2>
+            <div class="row">
+                {% for makale in makaleler %}
+                    <div class="col-md-6">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title text-dark"><i class="fas fa-file-alt"></i> {{ makale.baslik }}</h5>
+                                
+                                {% if makale.durum == "Değerlendirildi" %}
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle"></i> Bu makale için değerlendirmeniz tamamlanmıştır
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted"><strong>Durum:</strong> {{ makale.durum }}</p>
+                                    <p class="text-muted"><strong>Özet:</strong> {{ makale.ozet|default:"Özet bulunmamaktadır." }}</p>
+                                    
+                                    <!-- Dosyaya erişim butonu -->
+                                    <p>
+                                        {% if makale.anonim_dosya %}
+                                        <a href="{{ makale.anonim_dosya.url }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                            <i class="fas fa-download"></i> Anonimleştirilmiş Makale PDF'yi İndir
+                                        </a>
+                                        {% else %}
+                                        <span class="text-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> Anonimleştirilmiş dosya henüz yok
+                                        </span>
+                                        {% endif %}
+                                    </p>
+                                    
+                                    <!-- Değerlendirme buton kontrolü -->
+                                    {% with degerlendirme=makale.degerlendirme_set.all|first %}
+                                        {% if degerlendirme and degerlendirme.degerlendirme_icerik %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle"></i> Bu makale için değerlendirme yapmışsınız
+                                            </div>
+                                        {% else %}
+                                            <a href="{% url 'degerlendirme_sayfasi' makale.id %}" class="btn btn-success w-100">
+                                                <i class="fas fa-check-circle"></i> Değerlendirmek için tıklayınız
+                                            </a>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center text-danger">Şu anda size atanmış bir makale bulunmamaktadır.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

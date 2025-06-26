@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Makale Görüntüleme</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome (İkonlar) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- jsPDF kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .readonly-section {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .readonly-section::before {
+            content: "Bu bölüm düzenlenemez";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: #dc3545;
+            color: white;
+            font-size: 14px;
+            padding: 2px 10px;
+            border-radius: 10px;
+        }
+        .lock-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #dc3545;
+            font-size: 1.2rem;
+        }
+        .editable-section {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        .editable-section::before {
+            content: "Bu bölüm düzenlenebilir";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: #28a745;
+            color: white;
+            font-size: 14px;
+            padding: 2px 10px;
+            border-radius: 10px;
+        }
+        .save-button {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .save-button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .save-button .icon {
+            margin-right: 8px;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            color: #856404;
+        }
+        .reviewer-section {
+            background-color: #f8f9fa;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            position: relative;
+        }
+        .reviewer-section-label {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background-color: #dc3545;
+            color: white;
+            font-weight: bold;
+            padding: 3px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+        .reviewer-section .lock-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            color: #dc3545;
+        }
+        .btn-send-to-author {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-send-to-author:hover {
+            background-color: #218838;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5">
+        <h2 class="text-center text-primary"><i class="fas fa-file-alt"></i> Makale Görüntüleme</h2>
+        
+       
+        {% if messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h4 class="card-title"><i class="fas fa-info-circle"></i> Makale Bilgileri</h4>
+                <p><strong>Makale Başlığı:</strong> {{ makale.baslik }}</p>
+                <p><strong>Durum:</strong> <span class="badge bg-primary">{{ makale.durum }}</span></p>
+                <p><strong>Görüntülenen İçerik:</strong> <span class="badge bg-info">{{ metin_tipi }}</span></p>
+                {% if makale.durum == "Anonimleştirildi" and makale.anonim_dosya %}
+                <div class="d-grid mt-3">
+                    <a href="{{ makale.anonim_dosya.url }}" class="btn btn-warning" download="Anonimlestirilen_{{ makale.baslik }}.pdf">
+                        <i class="fas fa-download"></i> Anonimleştirilmiş PDF'yi İndir
+                    </a>
+                </div>
+                {% endif %}
+                <!-- BLOK 1: TEK ve KAPSAMLI DEĞERLENDİRME/DURUM KONTROLÜ -->
+                {% if degerlendirilmis or makale.durum == "Değerlendirildi" or makale.durum == "Değerlendirildi ve Anonimlik Çözüldü" or makale.durum == "Değerlendirildi - Anonimlik Çözüldü" or makale.durum == "Anonimlik Çözüldü - Değerlendirildi" or makale.durum == "Anonimlik Kaldırıldı" %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Bu makale değerlendirilmiştir.
+                    </div>
+                    
+                    {% if anonim_etiketler_var and makale.durum == 'Değerlendirildi' %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Bu makale hala anonim etiketler içeriyor. Yazara göndermeden önce anonimliği çözmeniz gerekiyor.
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> <strong>Güvenli Anonimlik Çözme:</strong> Anonimliği çözmek için aşağıdaki butonu kullanın. Bu işlem, SHA-256 algoritması ile güvenli bir şekilde gerçekleştirilir.
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <form method="POST" class="flex-grow-1" action="{% url 'anonimlestirmeyi_geri_al' makale.id %}">
+                            {% csrf_token %}
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-unlock"></i> Anonimliği Çöz (SHA-256 ile Güvenli)
+                                </button>
+                            </div>
+                            <small class="form-text text-muted d-block mb-3">
+                                Bu işlemde şifrelenmiş veriler güvenlik için korunacaktır. Aynı zamanda, şifrelenmiş veriler çözümlenip yerlerine korunacaktır.
+                            </small>
+                        </form>
+                        
+                        {% if makale.anonim_dosya %}
+                        <div class="flex-grow-1">
+                            <a href="{{ makale.anonim_dosya.url }}" class="btn btn-info btn-lg d-block" target="_blank" download="Hakem_Degerlendirmesi_{{ makale.baslik }}.pdf">
+                                <i class="fas fa-download"></i> Hakem Değerlendirmesini İndir
+                            </a>
+                            <small class="form-text text-muted d-block mb-3">
+                                Hakemden gelen değerlendirmeyi içeren PDF'i indirin.
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <form method="POST" class="mt-3">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="deanonymize" class="btn btn-warning">
+                                <i class="fas fa-unlock-alt"></i> Metin Bazlı Anonimliği Çöz (Alternatif)
+                            </button>
+                        </div>
+                        <small class="form-text text-muted d-block mb-3">
+                            Alternatif yöntem, metin bazlı değiştirme yapar ve sadece bir sorun yaşanırsa kullanılmalıdır.
+                        </small>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Bu makalenin anonimliği çözülmüştür. Artık yazara gönderebilirsiniz.
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <form method="POST" class="flex-grow-1">
+                            {% csrf_token %}
+                            <div class="d-grid">
+                                <button type="submit" name="send_to_author" class="btn btn-success btn-lg">
+                                    <i class="fas fa-paper-plane"></i> Yazara Gönder
+                                </button>
+                            </div>
+                            <small class="form-text text-muted d-block mb-2">
+                                Bu işlem, değerlendirme sonuçlarını yazara bildirir ve yazara sonuçları görüntüleme imkanı verir.
+                            </small>
+                        </form>
+                        
+                        {% if makale.anonim_dosya %}
+                        <div class="flex-grow-1">
+                            <a href="{{ makale.anonim_dosya.url }}" class="btn btn-primary btn-lg d-block" target="_blank" download="Yazara_Gonderilecek_{{ makale.baslik }}.pdf">
+                                <i class="fas fa-download"></i> Yazara Giden PDF'i İndir
+                            </a>
+                            <small class="form-text text-muted d-block mb-2">
+                                Yazara gönderilecek olan değerlendirme PDF'ini indirin.
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% else %}
+                    <div class="d-grid gap-2 mt-3">
+                        <form method="POST">
+                            {% csrf_token %}
+                            <button type="submit" name="remove_anon" class="btn btn-outline-danger">
+                                <i class="fas fa-unlock-alt"></i> Anonimliği Kaldır
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-dark mb-0"><i class="fas fa-file-alt"></i> {{ metin_tipi }}</h4>
+                <div>
+                    <button id="saveAsPdf" class="btn btn-info me-2">
+                        <i class="fas fa-file-pdf"></i> Metni PDF Olarak Kaydet
+                    </button>
+                    {% if not anonim_etiketler_var and makale.anonim_dosya %}
+                        <a href="{{ makale.anonim_dosya.url }}" class="btn btn-primary" target="_blank" download="Anonimliği_Çözülmüş_{{ makale.baslik }}.pdf">
+                            <i class="fas fa-download"></i> Çözülmüş PDF'i İndir
+                        </a>
+                    {% elif makale.anonim_dosya %}
+                        <a href="{{ makale.anonim_dosya.url }}" class="btn btn-info" target="_blank" download>
+                            <i class="fas fa-download"></i> PDF Olarak İndir
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if hakem_degerlendirme_bolumu %}
+                <!-- Makale İçeriği - Düzenlenebilir Bölüm -->
+                <form method="POST" id="editableContentForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="makale_id" value="{{ makale.id }}">
+                    
+                    <div class="editable-section">
+                        <textarea id="contentText" name="editedContent" class="form-control" rows="15">{{ duzenlenebilir_metin }}</textarea>
+                        
+                        <div class="warning-box mt-2">
+                            <i class="fas fa-info-circle me-2"></i> <strong>Not:</strong> Bu bölümde makale metni üzerinde değişiklik yapabilirsiniz. Hakem değerlendirmesi otomatik olarak korunacaktır.
+                        </div>
+                    </div>
+                    
+                    <!-- Hakem Değerlendirmesi - Sadece Görüntüleme -->
+                    <div class="reviewer-section mt-4">
+                        <span class="reviewer-section-label">HAKEM DEĞERLENDİRMESİ</span>
+                        <i class="fas fa-lock lock-badge"></i>
+                        <div style="white-space: pre-wrap;" class="mt-3">{{ hakem_degerlendirme_bolumu }}</div>
+                        <div class="alert alert-danger mt-3 mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i> <strong>Önemli:</strong> Hakem değerlendirmesi bölümü değiştirilemez ve otomatik olarak korunacaktır.
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-3">
+                        <button type="submit" name="saveEditedContent" class="save-button">
+                            <i class="fas fa-save icon"></i> PDF'deki Değişiklikleri Kaydet
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <!-- Tüm Metin - Normal Görünüm -->
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="makale_id" value="{{ makale.id }}">
+                    
+                    {% if metin_tipi == 'Hakem Değerlendirmesi' %}
+                        <div class="readonly-section">
+                            <i class="fas fa-lock lock-icon"></i>
+                            <div style="white-space: pre-wrap;">{{ goruntulenecek_metin }}</div>
+                            <div class="alert alert-danger mt-3 mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i> <strong>Dikkat:</strong> Hakem değerlendirmesi düzenlenemez.
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="editable-section">
+                            <textarea id="contentText" name="editedContent" class="form-control" rows="20">{{ goruntulenecek_metin }}</textarea>
+                            
+                            <div class="d-grid mt-3">
+                                <button type="submit" name="saveEditedContent" class="save-button">
+                                    <i class="fas fa-save icon"></i> PDF'deki Değişiklikleri Kaydet
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="text-center mt-4">
+            {% if makale.durum == "Anonimlik Kaldırıldı" or makale.durum == "Değerlendirildi" and not anonim_etiketler_var %}
+                <a href="{{ makale.dosya.url }}" class="btn btn-primary" target="_blank">
+                    <i class="fas fa-download"></i> Orijinal PDF'yi İndir
+                </a>
+                {% if makale.anonim_dosya %}
+                    <a href="{{ makale.anonim_dosya.url }}" class="btn btn-success" target="_blank" download="Anonimliği_Çözülmüş_{{ makale.baslik }}.pdf">
+                        <i class="fas fa-download"></i> Çözülmüş PDF'i İndir
+                    </a>
+                {% endif %}
+            {% elif makale.anonim_dosya %}
+                <a href="{{ makale.anonim_dosya.url }}" class="btn btn-primary" target="_blank" download>
+                    <i class="fas fa-download"></i> Makale PDF'ini İndir
+                </a>
+            {% endif %}
+            <a href="{% url 'editor_panel' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Editör Paneline Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        window.jsPDF = window.jspdf.jsPDF;
+        document.getElementById('saveAsPdf').addEventListener('click', function() {
+            var content = document.getElementById('contentText').value;
+            var title = "{{ makale.baslik }}";
+            var doc = new jsPDF();
+            doc.setFontSize(16);
+            doc.text("Makale: " + title, 20, 20);
+            doc.setFontSize(12);
+            doc.text("İçerik: {{ metin_tipi }}", 20, 30);
+            doc.setFontSize(10);
+            var splitText = doc.splitTextToSize(content, 170);
+            var y = 40;
+            for (var i = 0; i < splitText.length; i++) {
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
+                }
+                doc.text(splitText[i], 20, y);
+                y += 7;
+            }
+            doc.save(title + ".pdf");
+        });
+
+        // Kullanıcı hakem değerlendirme bölümüne erişmeye çalışırsa uyarı göster
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hakem değerlendirme bölümüne tıklama engeli
+            const reviewerSection = document.querySelector('.reviewer-section');
+            if (reviewerSection) {
+                reviewerSection.addEventListener('click', function(e) {
+                    if (e.target.tagName !== 'A') {
+                        alert('Hakem değerlendirmesi bölümü düzenlenemez! Bu bölüm, değerlendirmenin bütünlüğünü korumak için kilitlenmiştir.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

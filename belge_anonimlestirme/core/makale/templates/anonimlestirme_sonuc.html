@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Makale Anonimleştirme Sonucu</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    
+    <div class="container mt-5">
+        <h1 class="text-center text-primary mb-4">📄 Makale Anonimleştirme Sonucu</h1>
+
+        <div class="card shadow-sm p-4">
+            <h3 class="mb-3">Anonimleştirilmiş Metin:</h3>
+            <textarea class="form-control" rows="10" readonly>{{ anonim_metin }}</textarea>
+        </div>
+
+        {% if blurred_images %}
+        <div class="card shadow-sm p-4 mt-4">
+            <h3 class="text-warning">Bulanıklaştırılmış Görseller:</h3>
+            {% for image in blurred_images %}
+                <img src="{{ image.url }}" class="img-fluid rounded mb-3" alt="Bulanık Görsel">
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{% url 'anonimlestirme_duzenle' anonimlestirme.id %}" class="btn btn-outline-warning">
+                <i class="fas fa-edit"></i> Anonimleştirmeyi Düzenle
+            </a>
+            <form method="POST" action="{% url 'anonimlestirmeyi_geri_al' anonimlestirme.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-undo"></i> Anonimliği Geri Al
+                </button>
+            </form>
+            <a href="{% url 'editor_panel' %}" class="btn btn-secondary">Geri Dön</a>
+        </div>        
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
